@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pokemon Battle</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0d0d1a;display:flex;justify-content:center;padding:2rem}
+#app{width:100%;max-width:600px}
+.arena{background:#1a1a2e;border-radius:12px;padding:1.5rem;min-height:520px}
+.hp-bar-bg{width:100%;height:10px;background:#333;border-radius:5px;overflow:hidden;margin-top:4px}
+.hp-bar-fill{height:100%;border-radius:5px;transition:width 0.4s ease}
+.poke-sprite{width:96px;height:96px;image-rendering:pixelated}
+.move-btn{width:100%;padding:10px 12px;border:0.5px solid #444;background:#16213e;color:#e0e0e0;border-radius:8px;cursor:pointer;font-size:13px;text-align:left;transition:background 0.15s}
+.move-btn:hover:not(:disabled){background:#0f3460}
+.move-btn:disabled{opacity:0.4;cursor:not-allowed}
+.log-box{background:#0d0d1a;border-radius:8px;padding:10px 14px;height:130px;overflow-y:auto;font-size:13px;color:#ccc;border:0.5px solid #333}
+.log-line{padding:2px 0;border-bottom:0.5px solid #1a1a2e}
+.log-line:last-child{border-bottom:none}
+.tag{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.screen-overlay{background:#1a1a2e;border-radius:12px;padding:2rem;text-align:center;min-height:520px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem}
+input[type=text]{background:#16213e;border:0.5px solid #444;color:#e0e0e0;border-radius:8px;padding:10px 14px;font-size:15px;width:100%;outline:none}
+input[type=text]:focus{border-color:#4a90e2}
+.start-btn{background:#4a90e2;color:#fff;border:none;border-radius:8px;padding:12px 32px;font-size:15px;cursor:pointer;font-weight:500}
+.start-btn:hover{background:#357abd}
+.start-btn:disabled{background:#333;color:#666;cursor:not-allowed}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const MAX_HP = 300;
+const BOT_LIST = ["gengar","snorlax","gyarados","machamp","dragonite"];
+let state = { screen: "start" };
+
+function render() {
+  const app = document.getElementById("app");
+  if (state.screen === "start") renderStart(app);
+  else if (state.screen === "loading") renderLoading(app);
+  else if (state.screen === "battle") renderBattle(app);
+  else if (state.screen === "result") renderResult(app);
+}
+
+function renderStart(app) {
+  app.innerHTML = `
+    <div class="screen-overlay">
+      <div style="font-size:48px">⚔️</div>
+      <h2 style="color:#e0e0e0;font-size:22px;font-weight:500">Pokemon Battle</h2>
+      <p style="color:#888;font-size:14px">Choisissez votre Pokemon et battez le bot !</p>
+      <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:12px">
+        <input type="text" id="pname" placeholder="ex: pikachu, bulbasaur, charmander..." />
+        <button class="start-btn" id="startBtn" onclick="startGame()">Commencer le combat</button>
+      </div>
+      <p style="color:#555;font-size:12px">Propulsé par PokéAPI</p>
+    </div>`;
+  document.getElementById("pname").addEventListener("keydown", e => { if(e.key==="Enter") startGame(); });
+}
+
+function renderLoading(app) {
+  app.innerHTML = `
+    <div class="screen-overlay">
+      <div style="font-size:40px">⟳</div>
+      <p style="color:#888">${state.loadMsg || "Chargement..."}</p>
+    </div>`;
+}
+
+function renderBattle(app) {
+  const p = state.player, b = state.bot;
+  const pPct = Math.max(0, Math.round((p.hp / MAX_HP) * 100));
+  const bPct = Math.max(0, Math.round((b.hp / MAX_HP) * 100));
+  const pColor = pPct > 50 ? "#4caf50" : pPct > 25 ? "#ff9800" : "#f44336";
+  const bColor = bPct > 50 ? "#4caf50" : bPct > 25 ? "#ff9800" : "#f44336";
+  const fighting = state.fighting;
+
+  app.innerHTML = `
+    <div class="arena">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div style="background:#16213e;border-radius:8px;padding:12px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <img class="poke-sprite" src="https://img.pokemondb.net/sprites/black-white/anim/normal/${p.name}.gif" onerror="this.src='https://img.pokemondb.net/sprites/sword-shield/icon/${p.name}.png'" />
+            <div style="flex:1">
+              <div style="color:#e0e0e0;font-weight:500;font-size:14px;text-transform:capitalize">${p.name}</div>
+              <div style="color:#888;font-size:12px">${p.hp} / ${MAX_HP} HP</div>
+              <div class="hp-bar-bg"><div class="hp-bar-fill" style="width:${pPct}%;background:${pColor}"></div></div>
+            </div>
+          </div>
+        </div>
+        <div style="background:#16213e;border-radius:8px;padding:12px">
+          <div style="display:flex;align-items:center;gap:10px;flex-direction:row-reverse">
+            <img class="poke-sprite" src="https://img.pokemondb.net/sprites/black-white/anim/normal/${b.name}.gif" onerror="this.src='https://img.pokemondb.net/sprites/sword-shield/icon/${b.name}.png'" />
+            <div style="flex:1;text-align:right">
+              <div style="color:#e0e0e0;font-weight:500;font-size:14px;text-transform:capitalize">${b.name} <span style="font-size:11px;color:#888">(bot)</span></div>
+              <div style="color:#888;font-size:12px">${b.hp} / ${MAX_HP} HP</div>
+              <div class="hp-bar-bg"><div class="hp-bar-fill" style="width:${bPct}%;background:${bColor}"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="log-box" id="logBox">
+        ${state.log.map(l => `<div class="log-line">${l}</div>`).join("")}
+      </div>
+      <div style="margin-top:14px">
+        <div style="color:#888;font-size:12px;margin-bottom:8px">Choisissez une attaque :</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          ${p.moves.map((m,i) => `
+            <button class="move-btn" ${fighting ? "disabled" : ""} onclick="doPlayerTurn(${i})">
+              <div style="color:#e0e0e0;font-weight:500;text-transform:capitalize">${m.name}</div>
+              <div style="display:flex;gap:8px;margin-top:3px">
+                <span class="tag" style="background:#1e3a5f;color:#7ab8f5">PWR ${m.power ?? "—"}</span>
+                <span class="tag" style="background:#1e3a1e;color:#7af57a">ACC ${m.accuracy}%</span>
+                <span class="tag" style="background:#3a1e1e;color:#f57a7a">PP ${m.pp}</span>
+              </div>
+            </button>`).join("")}
+        </div>
+      </div>
+    </div>`;
+  const lb = document.getElementById("logBox");
+  if (lb) lb.scrollTop = lb.scrollHeight;
+}
+
+function renderResult(app) {
+  const won = state.player.hp > 0 && state.bot.hp <= 0;
+  app.innerHTML = `
+    <div class="screen-overlay">
+      <div style="font-size:56px">${won ? "🏆" : "💀"}</div>
+      <h2 style="color:${won ? "#4caf50" : "#f44336"};font-size:24px;font-weight:500">${won ? "Victoire !" : "Défaite !"}</h2>
+      <p style="color:#888;font-size:14px">${won ? state.player.name.toUpperCase() + " a gagné !" : state.bot.name.toUpperCase() + " a gagné !"}</p>
+      <div style="display:flex;gap:24px;margin-top:8px">
+        <div style="text-align:center">
+          <div style="color:#888;font-size:12px">Vos HP</div>
+          <div style="color:#4caf50;font-size:20px;font-weight:500">${Math.max(0, state.player.hp)}</div>
+        </div>
+        <div style="text-align:center">
+          <div style="color:#888;font-size:12px">HP bot</div>
+          <div style="color:#f44336;font-size:20px;font-weight:500">${Math.max(0, state.bot.hp)}</div>
+        </div>
+      </div>
+      <button class="start-btn" onclick="resetGame()" style="margin-top:12px">Rejouer</button>
+    </div>`;
+}
+
+async function fetchPokemon(name) {
+  const r = await fetch(`https://pokeapi.co/api/v2/pokemon/${name.toLowerCase()}`);
+  if (!r.ok) throw new Error(`Pokemon "${name}" introuvable`);
+  const d = await r.json();
+  const movesRaw = d.moves.slice(0, 4);
+  const moves = await Promise.all(movesRaw.map(async m => {
+    const mr = await fetch(m.move.url);
+    const md = await mr.json();
+    return { name: md.name, power: md.power, accuracy: md.accuracy ?? 100, pp: md.pp };
+  }));
+  return { name: d.name, hp: MAX_HP, moves };
+}
+
+function calcDamage(move, atkPP, defPP) {
+  if (atkPP < defPP) return { dmg: 0, blocked: true, missed: false };
+  if (Math.random() * 100 > move.accuracy) return { dmg: 0, blocked: false, missed: true };
+  const dmg = Math.floor((move.power || 40) / 10) + Math.floor(Math.random() * 5) + 1;
+  return { dmg, blocked: false, missed: false };
+}
+
+function addLog(msg) { state.log.push(msg); if (state.log.length > 40) state.log.shift(); }
+
+async function startGame() {
+  const name = document.getElementById("pname")?.value?.trim();
+  if (!name) return;
+  state = { screen: "loading", loadMsg: "Chargement de votre Pokémon...", log: [] };
+  render();
+  try {
+    const player = await fetchPokemon(name);
+    state.loadMsg = "Préparation du bot...";
+    render();
+    const botName = BOT_LIST[Math.floor(Math.random() * BOT_LIST.length)];
+    const bot = await fetchPokemon(botName);
+    state = { screen: "battle", player, bot, log: [`⚔️ ${player.name.toUpperCase()} vs ${bot.name.toUpperCase()} — Que le combat commence !`], fighting: false };
+    render();
+  } catch(e) {
+    state = { screen: "start" };
+    render();
+    setTimeout(() => {
+      const inp = document.getElementById("pname");
+      if (inp) { inp.style.borderColor="#f44336"; inp.placeholder = "Pokemon introuvable, réessayez..."; }
+    }, 50);
+  }
+}
+
+async function doPlayerTurn(moveIdx) {
+  if (state.fighting) return;
+  state.fighting = true;
+  render();
+
+  const p = state.player, b = state.bot;
+  const pm = p.moves[moveIdx];
+  const bm = b.moves[Math.floor(Math.random() * b.moves.length)];
+
+  const pr = calcDamage(pm, pm.pp, bm.pp);
+  if (pr.blocked) addLog(`🚫 <span style="color:#ff9800">Vous</span> : ${pm.name} bloqué (PP trop faible)`);
+  else if (pr.missed) addLog(`💨 <span style="color:#ff9800">Vous</span> : ${pm.name} a raté !`);
+  else { b.hp -= pr.dmg; addLog(`✅ <span style="color:#7ab8f5">Vous</span> : ${pm.name} → <b style="color:#4caf50">-${pr.dmg} HP</b> au bot`); }
+
+  render();
+  await sleep(700);
+
+  if (b.hp <= 0) { state.screen = "result"; render(); return; }
+
+  const br = calcDamage(bm, bm.pp, pm.pp);
+  if (br.blocked) addLog(`🚫 <span style="color:#ff9800">Bot</span> : ${bm.name} bloqué`);
+  else if (br.missed) addLog(`💨 <span style="color:#ff9800">Bot</span> : ${bm.name} a raté !`);
+  else { p.hp -= br.dmg; addLog(`🤖 <span style="color:#f57a7a">Bot</span> : ${bm.name} → <b style="color:#f44336">-${br.dmg} HP</b> à vous`); }
+
+  if (p.hp <= 0) { state.screen = "result"; render(); return; }
+
+  state.fighting = false;
+  render();
+}
+
+function resetGame() { state = { screen: "start" }; render(); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+render();
+</script>
+</body>
+</html>

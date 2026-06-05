@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    />
+
+    <title>Book Reading Tracker</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    />
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+    <div class="max-w-7xl mx-auto p-6">
+
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">
+                Book Reading Tracker
+            </h1>
+
+            <p class="text-gray-500 mt-2">
+                Manage and track your reading progress
+            </p>
+        </header>
+
+        <!-- GLOBAL STATS -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+
+            <div class="card">
+                <h2 class="card-title">
+                    Total Books
+                </h2>
+
+                <p
+                    id="totalBooks"
+                    class="card-value"
+                >
+                    0
+                </p>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">
+                    Finished Books
+                </h2>
+
+                <p
+                    id="finishedBooks"
+                    class="card-value text-green-600"
+                >
+                    0
+                </p>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">
+                    Total Pages Read
+                </h2>
+
+                <p
+                    id="totalPages"
+                    class="card-value text-blue-600"
+                >
+                    0
+                </p>
+            </div>
+
+        </section>
+
+        <!-- FORM -->
+        <section class="bg-white rounded-2xl shadow-lg p-6 mb-10">
+
+            <h2 class="section-title">
+                Add New Book
+            </h2>
+
+            <form
+                id="bookForm"
+                class="grid grid-cols-1 md:grid-cols-2 gap-5"
+            >
+
+                <div>
+                    <label class="label">
+                        Title
+                    </label>
+
+                    <input
+                        type="text"
+                        id="title"
+                        class="input"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label class="label">
+                        Author
+                    </label>
+
+                    <input
+                        type="text"
+                        id="author"
+                        class="input"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label class="label">
+                        Number Of Pages
+                    </label>
+
+                    <input
+                        type="number"
+                        id="numberOfPages"
+                        class="input"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label class="label">
+                        Pages Read
+                    </label>
+
+                    <input
+                        type="number"
+                        id="pagesRead"
+                        class="input"
+                        value="0"
+                    />
+                </div>
+
+                <div>
+                    <label class="label">
+                        Price
+                    </label>
+
+                    <input
+                        type="number"
+                        id="price"
+                        class="input"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label class="label">
+                        Suggested By
+                    </label>
+
+                    <input
+                        type="text"
+                        id="suggestedBy"
+                        class="input"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label class="label">
+                        Status
+                    </label>
+
+                    <select
+                        id="status"
+                        class="input"
+                    >
+                        <option>Read</option>
+                        <option>Re-read</option>
+                        <option>DNF</option>
+                        <option>Currently Reading</option>
+                        <option>Returned Unread</option>
+                        <option>Want To Read</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="label">
+                        Format
+                    </label>
+
+                    <select
+                        id="format"
+                        class="input"
+                    >
+                        <option>Print</option>
+                        <option>PDF</option>
+                        <option>Ebook</option>
+                        <option>AudioBook</option>
+                    </select>
+                </div>
+
+                <div class="md:col-span-2">
+                    <button
+                        type="submit"
+                        class="submit-btn"
+                    >
+                        Add Book
+                    </button>
+                </div>
+
+            </form>
+
+        </section>
+
+        <!-- BOOK LIST -->
+        <section>
+
+            <div class="flex items-center justify-between mb-5">
+
+                <h2 class="section-title">
+                    Reading List
+                </h2>
+
+            </div>
+
+            <div
+                id="booksContainer"
+                class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+            >
+
+            </div>
+
+        </section>
+
+    </div>
+
+    <script src="app.js"></script>
+
+</body>
+</html>
